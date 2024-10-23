@@ -1,61 +1,72 @@
+// Імпорт бібліотеки для роботи з командним рядком
+const { program } = require('commander');
+// Імпорт бібліотеки для роботи з файлами
 const fs = require('fs');
-const { Command } = require('commander');
-const program = new Command();
 
-program
-  .requiredOption('-i, --input <path>', 'Input file path (JSON with currency rates)')
-  .option('-o, --output <path>', 'Output file path')
-  .option('-d, --display', 'Display result in console')
-  .parse(process.argv);
+// Функція для обробки параметрів командного рядка та читання вхідного файлу
+function handleInput() {
+  // Опис параметрів програми
+  program
+    .option("-i, --input <value>", "Шлях до \"вхідного\" файлу")
+    .option("-o, --output <value>", "Шлях до \"вихідного\" файлу") // Прибрали значення за замовчуванням
+    .option("-d, --display", "Чи відображати вихідні дані одразу у консоль");
 
-const options = program.opts();
+  // Парсинг параметрів
+  program.parse();
+  const options = program.opts();
 
-// Перевірка наявності обов'язкового параметра
-if (!options.input) {
-  console.error('Please, specify input file');
-  process.exit(1);
-}
-
-// Перевірка наявності файлу
-if (!fs.existsSync(options.input)) {
-  console.error('Cannot find input file');
-  process.exit(1);
-}
-
-// Читання даних з файлу
-let data;
-try {
-  data = JSON.parse(fs.readFileSync(options.input, 'utf-8'));
-  console.log('Data read from file:', data); // Додано для перевірки
-} catch (error) {
-  console.error('Error reading or parsing the input file:', error);
-  process.exit(1);
-}
-
-// Перевірка формату даних
-if (!Array.isArray(data)) {
-  console.error('Input data is not in the expected format');
-  process.exit(1);
-}
-
-// Витягнення курсів валют
-let output = '';
-data.forEach(entry => {
-  if (entry.date && entry.rate) {
-    output += `${entry.date}:${entry.rate}\n`;
+  // Перевірка наявності обов'язкового параметра вхідного файлу
+  if (!options.input) {
+    throw new Error("Please, specify input file");
   }
-});
 
-// Виведення результату
-if (options.display) {
-  if (output.trim()) {
-    console.log(output.trim());
-  } else {
-    console.log('No currency rates found in the input file.');
+  // Перевірка існування файлу
+  if (!fs.existsSync(options.input)) {
+    throw new Error("Cannot find input file");
+  }
+
+  // Читання вхідного файлу
+  const inputData = fs.readFileSync(options.input, 'utf-8');
+  return [options, inputData];
+}
+
+// Функція для обробки вихідних даних: вивід у консоль або запис у файл
+function processOutput(options, outputData) {
+  // Якщо вказано параметр для запису у файл
+  if (options.output) {
+    fs.writeFileSync(options.output, outputData);
+  }
+
+  // Якщо вказано параметр для виведення у консоль
+  if (options.display) {
+    console.log(outputData);
+  }
+
+  // Якщо жоден з параметрів не вказано
+  if (!options.output && !options.display) {
+    console.log("");
   }
 }
 
-// Запис у файл, якщо вказано
-if (options.output) {
-  fs.writeFileSync(options.output, output.trim(), 'utf-8');
+// Головна функція програми
+function main() {
+  // Отримання параметрів та вхідних даних
+  const [options, inputData] = handleInput();
+
+  // Парсинг JSON з вхідного файлу
+  const jsonData = JSON.parse(inputData);
+
+  // Формування рядка для виведення курсів валют у форматі "дата:курс"
+  let outputData = '';
+  jsonData.forEach(entry => {
+    if (entry.date && entry.rate) {
+      outputData += `${entry.date}:${entry.rate}\n`;
+    }
+  });
+
+  // Обробка виведення результатів
+  processOutput(options, outputData.trim());
 }
+
+// Запуск головної функції
+main();
