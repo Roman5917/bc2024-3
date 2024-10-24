@@ -1,26 +1,23 @@
-// Імпорт бібліотеки для роботи з командним рядком
-const { program } = require('commander');
-// Імпорт бібліотеки для роботи з файлами
-const fs = require('fs');
 
-// Функція для обробки параметрів командного рядка та читання вхідного файлу
-function handleInput() {
-  // Опис параметрів програми
+const { program } = require('commander');
+const fs = require('fs');
+function Inputtype() {
+  
   program
-    .option("-i, --input <value>", "Шлях до \"вхідного\" файлу")
-    .option("-o, --output <value>", "Шлях до \"вихідного\" файлу") // Прибрали значення за замовчуванням
-    .option("-d, --display", "Чи відображати вихідні дані одразу у консоль");
+    .option("-i, --input <value>", "input file path")
+    .option("-o, --output <value>", "Output file path")
+    .option("-d, --display", "Output display");
 
   // Парсинг параметрів
   program.parse();
   const options = program.opts();
 
-  // Перевірка наявності обов'язкового параметра вхідного файлу
+  
   if (!options.input) {
     throw new Error("Please, specify input file");
   }
 
-  // Перевірка існування файлу
+  
   if (!fs.existsSync(options.input)) {
     throw new Error("Cannot find input file");
   }
@@ -32,31 +29,30 @@ function handleInput() {
 
 // Функція для обробки вихідних даних: вивід у консоль або запис у файл
 function processOutput(options, outputData) {
-  // Якщо вказано параметр для запису у файл
+  
   if (options.output) {
     fs.writeFileSync(options.output, outputData);
   }
 
-  // Якщо вказано параметр для виведення у консоль
+  
   if (options.display) {
     console.log(outputData);
   }
 
-  // Якщо жоден з параметрів не вказано
+  
   if (!options.output && !options.display) {
     console.log("");
   }
 }
 
-// Головна функція програми
 function main() {
-  // Отримання параметрів та вхідних даних
-  const [options, inputData] = handleInput();
+  
+  const [options, inputData] = Inputtype();
 
-  // Парсинг JSON з вхідного файлу
+  
   const jsonData = JSON.parse(inputData);
 
-  // Формування рядка для виведення курсів валют у форматі "дата:курс"
+
   let outputData = '';
   jsonData.forEach(entry => {
     if (entry.date && entry.rate) {
@@ -64,9 +60,6 @@ function main() {
     }
   });
 
-  // Обробка виведення результатів
   processOutput(options, outputData.trim());
 }
-
-// Запуск головної функції
 main();
